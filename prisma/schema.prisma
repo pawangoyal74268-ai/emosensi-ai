@@ -1,0 +1,140 @@
+// Prisma Schema for EmoSense AI
+// Configured with SQLite for zero-setup local development,
+// structured cleanly for migration to PostgreSQL via DATABASE_URL.
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           String        @id @default(uuid())
+  email        String        @unique
+  name         String?
+  passwordHash String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  moodEntries     MoodEntry[]
+  chatSessions    ChatSession[]
+  analysisRecords AnalysisRecord[]
+  appointments    Appointment[]
+
+  @@map("users")
+}
+
+model MoodEntry {
+  id            String   @id @default(uuid())
+  userId        String?
+  mood          String   // happy, calm, neutral, anxious, sad, stressed, angry
+  moodScore     Float?   // 1-10
+  stressLevel   Float?   // 1-10
+  source        String   // manual, chat, voice, face
+  notes         String?
+  tags          String?  // comma-separated tags or JSON string
+  voiceAnalysis String?  // JSON string: { pitch, energy, tempo }
+  faceAnalysis  String?  // JSON string: { dominant_emotion, confidence }
+  createdAt     DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("mood_entries")
+}
+
+model ChatSession {
+  id             String        @id @default(uuid())
+  userId         String?
+  title          String
+  overallMood    String?
+  sessionSummary String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  user     User?         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages ChatMessage[]
+
+  @@index([userId])
+  @@map("chat_sessions")
+}
+
+model ChatMessage {
+  id             String      @id @default(uuid())
+  sessionId      String
+  role           String      // "user" | "assistant" | "system"
+  content        String
+  detectedMood   String?
+  detectedStress Float?
+  createdAt      DateTime    @default(now())
+
+  session ChatSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+  @@map("chat_messages")
+}
+
+model AnalysisRecord {
+  id           String   @id @default(uuid())
+  userId       String?
+  analysisType String   // "voice" | "face" | "text" | "multimodal"
+  result       String   // JSON string with detailed metrics & predictions
+  confidence   Float?   // 0 - 100 percentage
+  disclaimer   String?  // Non-diagnostic notice
+  createdAt    DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@map("analysis_records")
+}
+
+model Doctor {
+  id              String        @id @default(uuid())
+  name            String
+  specialization  String        // Psychiatrist, Psychologist, Therapist, Counselor, Life Coach
+  photoUrl        String?
+  bio             String?
+  experienceYears Int?
+  rating          Float?
+  consultationFee Float?
+  languages       String?       // JSON string or comma-separated
+  availableSlots  String?       // JSON string of time slots
+  phone           String?
+  email           String?
+  isDemoRecord    Boolean       @default(true) // Clearly marks demonstration data
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  appointments Appointment[]
+
+  @@index([specialization])
+  @@map("doctors")
+}
+
+model Appointment {
+  id               String   @id @default(uuid())
+  userId           String?
+  doctorId         String
+  doctorName       String
+  date             String   // YYYY-MM-DD
+  time             String   // HH:mm
+  status           String   @default("scheduled") // scheduled, completed, cancelled
+  consultationType String   @default("video")     // video, phone, in-person
+  notes            String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  user   User?   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  doctor Doctor? @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([doctorId])
+  @@index([date])
+  @@map("appointments")
+}
