@@ -1,0 +1,82 @@
+{
+  "name": "MoodEntry",
+  "type": "object",
+  "properties": {
+    "mood": {
+      "type": "string",
+      "enum": [
+        "happy",
+        "calm",
+        "neutral",
+        "anxious",
+        "sad",
+        "stressed",
+        "angry"
+      ],
+      "description": "Detected or logged mood"
+    },
+    "mood_score": {
+      "type": "number",
+      "description": "Mood score from 1-10"
+    },
+    "stress_level": {
+      "type": "number",
+      "description": "Stress level from 1-10"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "chat",
+        "voice",
+        "face",
+        "manual"
+      ],
+      "description": "How the mood was detected"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes or context"
+    },
+    "voice_analysis": {
+      "type": "object",
+      "properties": {
+        "pitch": {
+          "type": "number"
+        },
+        "energy": {
+          "type": "number"
+        },
+        "tempo": {
+          "type": "number"
+        }
+      }
+    },
+    "face_analysis": {
+      "type": "object",
+      "properties": {
+        "dominant_emotion": {
+          "type": "string"
+        },
+        "confidence": {
+          "type": "number"
+        }
+      }
+    }
+  },
+  "required": [
+    "mood",
+    "source"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

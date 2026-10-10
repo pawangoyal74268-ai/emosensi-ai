@@ -1,0 +1,63 @@
+{
+  "name": "ChatSession",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Session title"
+    },
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "detected_mood": {
+            "type": "string"
+          },
+          "detected_stress": {
+            "type": "number"
+          }
+        }
+      }
+    },
+    "overall_mood": {
+      "type": "string",
+      "enum": [
+        "happy",
+        "calm",
+        "neutral",
+        "anxious",
+        "sad",
+        "stressed",
+        "angry"
+      ]
+    },
+    "session_summary": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "title"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

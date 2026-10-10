@@ -1,0 +1,58 @@
+{
+  "name": "Appointment",
+  "type": "object",
+  "properties": {
+    "doctor_id": {
+      "type": "string",
+      "description": "Reference to doctor"
+    },
+    "doctor_name": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string",
+      "format": "date"
+    },
+    "time": {
+      "type": "string"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "scheduled",
+        "completed",
+        "cancelled"
+      ],
+      "default": "scheduled"
+    },
+    "notes": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "video",
+        "phone",
+        "in-person"
+      ],
+      "default": "video"
+    }
+  },
+  "required": [
+    "doctor_id",
+    "date",
+    "time"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}

@@ -1,0 +1,57 @@
+{
+  "name": "Doctor",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Doctor's full name"
+    },
+    "specialization": {
+      "type": "string",
+      "enum": [
+        "Psychiatrist",
+        "Psychologist",
+        "Therapist",
+        "Counselor",
+        "Life Coach"
+      ]
+    },
+    "photo_url": {
+      "type": "string"
+    },
+    "bio": {
+      "type": "string"
+    },
+    "experience_years": {
+      "type": "number"
+    },
+    "rating": {
+      "type": "number"
+    },
+    "consultation_fee": {
+      "type": "number"
+    },
+    "available_slots": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "languages": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "phone": {
+      "type": "string"
+    },
+    "email": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "name",
+    "specialization"
+  ]
+}
