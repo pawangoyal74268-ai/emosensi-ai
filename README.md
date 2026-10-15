@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 **Welcome to your Base44 project** 
 
 **About**
@@ -37,3 +38,6 @@ Open [Base44.com](http://Base44.com) and click on Publish.
 Documentation: [https://docs.base44.com/Integrations/Using-GitHub](https://docs.base44.com/Integrations/Using-GitHub)
 
 Support: [https://app.base44.com/support](https://app.base44.com/support)
+=======
+# emosensi-ai
+>>>>>>> 4ead0128660887ca6454130e8ff35f428f1e62eb
