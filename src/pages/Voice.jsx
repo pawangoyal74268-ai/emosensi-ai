@@ -1,39 +1,25 @@
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { base44 } from "@/api/base44Client";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "@/lib/AuthContext";
+import { useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { ArrowLeft, Volume2, Activity, Gauge, RefreshCw, MessageSquare, ShieldCheck } from "lucide-react";
+import { ArrowLeft, Volume2, Activity, Gauge, RefreshCw, MessageSquare, ShieldCheck, LogIn } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import VoiceAnalyzer from "@/components/voice/VoiceAnalyzer";
 import MoodCard from "@/components/mood/MoodCard";
 import StressIndicator from "@/components/mood/StressIndicator";
 
 export default function Voice() {
+  const { isAuthenticated, openAuthModal } = useAuth();
   const [analysisResult, setAnalysisResult] = useState(null);
   const queryClient = useQueryClient();
 
-  const saveMoodMutation = useMutation({
-    mutationFn: (moodData) => base44.entities.MoodEntry.create(moodData),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["moodEntries"] }),
-  });
-
   const handleAnalysisComplete = (analysis) => {
     setAnalysisResult(analysis);
-
-    saveMoodMutation.mutate({
-      mood: analysis.detected_mood,
-      stress_level: analysis.stress_level,
-      mood_score: analysis.mood_score || 10 - analysis.stress_level,
-      source: "voice",
-      notes: analysis.transcript || "",
-      voice_analysis: {
-        pitch: analysis.pitch,
-        energy: analysis.energy,
-        tempo: analysis.tempo,
-      },
-    });
+    queryClient.invalidateQueries({ queryKey: ["moodEntries"] });
+    queryClient.invalidateQueries({ queryKey: ["analytics"] });
+    queryClient.invalidateQueries({ queryKey: ["assessments"] });
   };
 
   const resetAnalysis = () => {
@@ -41,158 +27,195 @@ export default function Voice() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-violet-50/50 via-white to-purple-50/30">
-      <div className="max-w-2xl mx-auto px-4 py-8 space-y-6">
-        {/* Header */}
-        <div className="flex items-center gap-4">
-          <Link to={createPageUrl("Home")}>
-            <Button variant="ghost" size="icon" className="rounded-full bg-white border border-slate-100 text-slate-500 hover:text-violet-600" style={{ boxShadow: "0 2px 8px -2px rgba(124,58,237,0.06)" }}>
-              <ArrowLeft className="w-5 h-5" />
-            </Button>
-          </Link>
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800">Voice Analysis</h1>
-            <p className="text-sm text-slate-500">5-minute daily mood check-in with AI</p>
-          </div>
+    <div className="max-w-2xl mx-auto px-4 sm:px-6 py-6 sm:py-10 space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3.5">
+        <Link to={createPageUrl("Home")}>
+          <button
+            className="w-10 h-10 rounded-2xl bg-white dark:bg-white/10 border border-[#E9EAE7] dark:border-white/10 flex items-center justify-center text-[#182B2A] dark:text-white hover:border-[#245746]/40 transition-colors shadow-sm active:scale-95"
+            aria-label="Back to Home"
+          >
+            <ArrowLeft className="w-5 h-5" />
+          </button>
+        </Link>
+        <div>
+          <h1 className="text-2xl font-heading font-bold text-[#182B2A] dark:text-white">
+            Voice Emotion Analysis
+          </h1>
+          <p className="text-xs sm:text-sm text-[#697681] dark:text-white/60">
+            Acoustic tone, pitch, and spoken sentiment reflection
+          </p>
         </div>
+      </div>
 
-        {/* Analyzer or Results */}
-        <AnimatePresence mode="wait">
-          {!analysisResult ? (
-            <motion.div
-              key="analyzer"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              className="space-y-5"
-            >
-              <VoiceAnalyzer onAnalysisComplete={handleAnalysisComplete} />
+      {!isAuthenticated && (
+        <div className="p-4 rounded-2xl bg-[#E4EDFC]/70 dark:bg-[#1a253a] border border-[#E4EDFC] dark:border-white/10 flex items-center justify-between gap-3 text-[#182B2A] dark:text-white text-xs sm:text-sm shadow-sm">
+          <div className="flex items-center gap-2.5">
+            <LogIn className="w-4 h-4 text-[#284f88] dark:text-[#a0c2f8] flex-shrink-0" />
+            <span>Sign in to record and save voice assessments to your health history.</span>
+          </div>
+          <button
+            onClick={openAuthModal}
+            className="px-3 py-1.5 rounded-xl bg-[#245746] text-white text-xs font-semibold flex-shrink-0 active:scale-95"
+          >
+            Sign In
+          </button>
+        </div>
+      )}
 
-              {/* Tips */}
-              <div className="rounded-3xl bg-white border border-slate-100 p-6" style={{ boxShadow: "0 2px 20px -5px rgba(124,58,237,0.06)" }}>
-                <h3 className="font-semibold text-slate-700 mb-4">Tips for Best Results</h3>
-                <ul className="space-y-3 text-sm text-slate-500">
-                  <li className="flex items-start gap-3">
-                    <span className="w-6 h-6 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center text-xs font-semibold flex-shrink-0">1</span>
-                    <span>Speak naturally about how you're feeling today — your words matter</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="w-6 h-6 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center text-xs font-semibold flex-shrink-0">2</span>
-                    <span>Record for at least 1-2 minutes for accurate analysis (up to 5 min)</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="w-6 h-6 rounded-xl bg-violet-100 text-violet-600 flex items-center justify-center text-xs font-semibold flex-shrink-0">3</span>
-                    <span>Find a quiet environment for better voice detection</span>
-                  </li>
-                </ul>
+      {/* Analyzer or Results */}
+      <AnimatePresence mode="wait">
+        {!analysisResult ? (
+          <motion.div
+            key="analyzer"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="space-y-4"
+          >
+            <VoiceAnalyzer onAnalysisComplete={handleAnalysisComplete} />
+
+            {/* Tips Card */}
+            <div className="card-wellness p-6 space-y-3">
+              <h3 className="text-sm font-heading font-bold text-[#182B2A] dark:text-white">
+                Tips for Accurate Acoustic Reflection
+              </h3>
+              <ul className="space-y-2.5 text-xs text-[#697681] dark:text-white/70">
+                <li className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#DDE8DF] text-[#245746] dark:bg-white/15 dark:text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">
+                    1
+                  </span>
+                  <span>Speak naturally about what is genuinely on your mind today — pace and inflection help assess state.</span>
+                </li>
+                <li className="flex items-start gap-2.5">
+                  <span className="w-5 h-5 rounded-full bg-[#DDE8DF] text-[#245746] dark:bg-white/15 dark:text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">
+                    2
+                  </span>
+                  <span>Record for 1–2 minutes in a quiet environment for optimal acoustic fidelity.</span>
+                </li>
+              </ul>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="results"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            className="space-y-5"
+          >
+            {/* Snapshot Banner */}
+            <div className="p-6 rounded-3xl bg-gradient-to-br from-[#245746] to-[#1a3e32] text-white shadow-md space-y-3">
+              <div className="flex items-center justify-between text-xs text-[#DDE8DF] uppercase tracking-wider font-semibold">
+                <span>Vocal Sentiment Snapshot</span>
+                <span>Confidence: {analysisResult.confidence}%</span>
               </div>
-
-              {/* Privacy */}
-              <div className="flex items-center justify-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-slate-300" />
-                <p className="text-xs text-slate-400">Microphone access is only used during voice analysis</p>
-              </div>
-            </motion.div>
-          ) : (
-            <motion.div
-              key="results"
-              initial={{ opacity: 0, y: 16 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -16 }}
-              className="space-y-5"
-            >
-              {/* Your Emotional Snapshot */}
-              <motion.div
-                initial={{ opacity: 0, y: 12 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="rounded-3xl bg-gradient-to-br from-violet-500 to-purple-600 p-6 text-white"
-                style={{ boxShadow: "0 8px 30px -6px rgba(124,58,237,0.3)" }}
-              >
-                <p className="text-sm text-white/80 mb-1">Your Emotional Snapshot</p>
-                <h2 className="text-4xl font-bold capitalize mb-4">{analysisResult.detected_mood}</h2>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-xs text-white/70">Stress Level</p>
-                    <p className="text-xl font-semibold mt-0.5">
-                      {analysisResult.stress_level <= 3 ? "Low" : analysisResult.stress_level <= 5 ? "Moderate" : analysisResult.stress_level <= 7 ? "Elevated" : "High"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-white/70">Confidence</p>
-                    <p className="text-xl font-semibold mt-0.5">{analysisResult.confidence}%</p>
-                  </div>
+              <h2 className="text-3xl font-heading font-extrabold capitalize">
+                {analysisResult.detected_mood}
+              </h2>
+              <div className="grid grid-cols-2 gap-3 pt-2 border-t border-white/10 text-xs text-white/80">
+                <div>
+                  <span className="text-[11px] text-[#DDE8DF]">Stress Assessment:</span>
+                  <p className="text-base font-bold text-white mt-0.5">
+                    {analysisResult.stress_level <= 3 ? "Low" : analysisResult.stress_level <= 5 ? "Moderate" : analysisResult.stress_level <= 7 ? "Elevated" : "High"} ({analysisResult.stress_level}/10)
+                  </p>
                 </div>
-              </motion.div>
+                <div>
+                  <span className="text-[11px] text-[#DDE8DF]">Tone State:</span>
+                  <p className="text-base font-bold text-white capitalize mt-0.5">
+                    {analysisResult.detected_mood}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-              {/* Detected Mood */}
-              <div className="rounded-3xl bg-white border border-slate-100 p-6" style={{ boxShadow: "0 2px 20px -5px rgba(124,58,237,0.06)" }}>
-                <h3 className="font-semibold text-slate-700 mb-4">Detected Emotion</h3>
+            {/* Detected Mood & Stress */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="card-wellness p-5">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#697681] dark:text-white/60 mb-3">
+                  Detected Emotion
+                </h3>
                 <MoodCard mood={analysisResult.detected_mood} source="voice" />
               </div>
 
-              {/* Transcript */}
-              {analysisResult.transcript && (
-                <div className="rounded-3xl bg-white border border-slate-100 p-6" style={{ boxShadow: "0 2px 20px -5px rgba(124,58,237,0.06)" }}>
-                  <div className="flex items-center gap-2 mb-4">
-                    <MessageSquare className="w-5 h-5 text-violet-500" />
-                    <h3 className="font-semibold text-slate-700">What You Said</h3>
-                  </div>
-                  <p className="text-slate-500 text-sm leading-relaxed italic">"{analysisResult.transcript}"</p>
-                </div>
-              )}
-
-              {/* AI Summary */}
-              {analysisResult.summary && (
-                <div className="rounded-3xl bg-gradient-to-br from-violet-50 to-purple-50 border border-violet-100 p-6">
-                  <h3 className="font-semibold text-slate-700 mb-3">AI Summary</h3>
-                  <p className="text-slate-600 leading-relaxed text-sm">{analysisResult.summary}</p>
-                </div>
-              )}
-
-              {/* Stress Level */}
-              <div className="rounded-3xl bg-white border border-slate-100 p-6" style={{ boxShadow: "0 2px 20px -5px rgba(124,58,237,0.06)" }}>
-                <h3 className="font-semibold text-slate-700 mb-4">Stress Assessment</h3>
+              <div className="card-wellness p-5">
+                <h3 className="text-xs font-bold uppercase tracking-wider text-[#697681] dark:text-white/60 mb-3">
+                  Stress Assessment
+                </h3>
                 <StressIndicator level={analysisResult.stress_level} size="lg" />
               </div>
+            </div>
 
-              {/* Voice Metrics */}
-              <div className="rounded-3xl bg-white border border-slate-100 p-6" style={{ boxShadow: "0 2px 20px -5px rgba(124,58,237,0.06)" }}>
-                <h3 className="font-semibold text-slate-700 mb-4">Voice Metrics</h3>
-                <div className="grid grid-cols-3 gap-3">
-                  <div className="text-center p-4 rounded-2xl bg-violet-50">
-                    <Volume2 className="w-6 h-6 mx-auto text-violet-500 mb-2" />
-                    <p className="text-xl font-bold text-slate-700">{Math.round(analysisResult.pitch)}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Pitch (Hz)</p>
-                  </div>
-                  <div className="text-center p-4 rounded-2xl bg-rose-50">
-                    <Activity className="w-6 h-6 mx-auto text-rose-500 mb-2" />
-                    <p className="text-xl font-bold text-slate-700">{Math.round(analysisResult.energy)}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Energy</p>
-                  </div>
-                  <div className="text-center p-4 rounded-2xl bg-teal-50">
-                    <Gauge className="w-6 h-6 mx-auto text-teal-500 mb-2" />
-                    <p className="text-xl font-bold text-slate-700">{Math.round(analysisResult.tempo)}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">Tempo (BPM)</p>
-                  </div>
+            {/* Transcript */}
+            {analysisResult.transcript && (
+              <div className="card-wellness p-6 space-y-2">
+                <div className="flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-[#284f88] dark:text-[#a0c2f8]" />
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-[#182B2A] dark:text-white">
+                    Transcribed Speech
+                  </h3>
+                </div>
+                <p className="text-xs sm:text-sm text-[#182B2A] dark:text-white/80 leading-relaxed italic bg-[#F7F5F0]/70 dark:bg-white/5 p-3.5 rounded-2xl border border-[#E9EAE7] dark:border-white/5">
+                  "{analysisResult.transcript}"
+                </p>
+              </div>
+            )}
+
+            {/* Voice Metrics — Pitch, Energy, Tempo */}
+            <div className="card-wellness p-6 space-y-4">
+              <h3 className="text-xs font-bold uppercase tracking-wider text-[#182B2A] dark:text-white">
+                Acoustic Signal Metrics
+              </h3>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="text-center p-3.5 rounded-2xl bg-[#E4EDFC]/60 dark:bg-white/5 border border-[#E4EDFC] dark:border-white/10">
+                  <Volume2 className="w-5 h-5 mx-auto text-[#284f88] dark:text-[#a0c2f8] mb-1.5" />
+                  <p className="text-lg font-heading font-bold text-[#182B2A] dark:text-white">
+                    {Math.round(analysisResult.pitch || 0)}
+                  </p>
+                  <p className="text-[10px] text-[#697681] dark:text-white/50 mt-0.5">Pitch (Hz)</p>
+                </div>
+                <div className="text-center p-3.5 rounded-2xl bg-[#F7F5F0] dark:bg-white/5 border border-[#E9EAE7] dark:border-white/10">
+                  <Activity className="w-5 h-5 mx-auto text-[#d97706] mb-1.5" />
+                  <p className="text-lg font-heading font-bold text-[#182B2A] dark:text-white">
+                    {Math.round(analysisResult.energy || 0)}
+                  </p>
+                  <p className="text-[10px] text-[#697681] dark:text-white/50 mt-0.5">Energy</p>
+                </div>
+                <div className="text-center p-3.5 rounded-2xl bg-[#DDE8DF]/60 dark:bg-white/5 border border-[#DDE8DF] dark:border-white/10">
+                  <Gauge className="w-5 h-5 mx-auto text-[#245746] dark:text-[#88c5ad] mb-1.5" />
+                  <p className="text-lg font-heading font-bold text-[#182B2A] dark:text-white">
+                    {Math.round(analysisResult.tempo || 0)}
+                  </p>
+                  <p className="text-[10px] text-[#697681] dark:text-white/50 mt-0.5">Tempo (BPM)</p>
                 </div>
               </div>
+            </div>
 
-              {/* Confidence & Actions */}
-              <div className="rounded-3xl bg-white border border-slate-100 p-6" style={{ boxShadow: "0 2px 20px -5px rgba(124,58,237,0.06)" }}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-slate-400">Analysis Confidence</p>
-                    <p className="text-2xl font-bold text-slate-700">{analysisResult.confidence}%</p>
-                  </div>
-                  <Button onClick={resetAnalysis} variant="outline" className="rounded-full border-slate-200 text-slate-600 hover:bg-slate-50">
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Analyze Again
-                  </Button>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
+            {/* Clinical Disclaimer */}
+            <div className="p-4 rounded-2xl bg-[#F7F5F0] dark:bg-white/5 border border-[#E9EAE7] dark:border-white/10 text-[11px] text-[#697681] dark:text-white/50 text-center leading-relaxed">
+              {analysisResult.disclaimer ||
+                "This emotional assessment is intended for informational self-reflection and personal awareness. It is not medical or psychological diagnosis."}
+            </div>
+
+            {/* Analyze Again Action */}
+            <div className="flex justify-center">
+              <Button
+                onClick={resetAnalysis}
+                variant="outline"
+                className="rounded-full px-6 h-11 border-[#E9EAE7] dark:border-white/10 text-[#182B2A] dark:text-white hover:bg-white dark:hover:bg-white/10 text-xs sm:text-sm font-semibold"
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Analyze Again
+              </Button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Safety Footer */}
+      <div className="flex items-center justify-center gap-2 text-xs text-[#697681] dark:text-white/40">
+        <ShieldCheck className="w-4 h-4" />
+        <span>Audio recordings are processed in-memory and never permanently stored</span>
       </div>
     </div>
   );

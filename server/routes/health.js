@@ -1,6 +1,7 @@
 // Health Check Route for EmoSense AI Backend
 import express from "express";
 import prisma from "../db.js";
+import aiService from "../services/aiService.js";
 
 const router = express.Router();
 
@@ -12,6 +13,7 @@ router.get("/health", async (req, res, next) => {
     const dbLatencyMs = Date.now() - startTime;
 
     const doctorCount = await prisma.doctor.count();
+    const activeAi = aiService.getActiveAiProvider();
 
     res.json({
       status: "ok",
@@ -25,6 +27,7 @@ router.get("/health", async (req, res, next) => {
         latencyMs: dbLatencyMs,
         demoDoctorsLoaded: doctorCount,
       },
+      ai: activeAi,
     });
   } catch (error) {
     console.error("Health check database failure:", error);

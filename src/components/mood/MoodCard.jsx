@@ -11,7 +11,17 @@ const moodConfig = {
   angry: { emoji: "😠", color: "from-red-400 to-orange-400", bg: "bg-red-50", text: "text-red-700", soft: "text-red-600" },
 };
 
-export default function MoodCard({ mood, score, source, date, onClick, compact = false }) {
+/**
+ * @param {{
+ *   mood: string;
+ *   score?: number | string | null;
+ *   source?: string | null;
+ *   date?: string | null;
+ *   onClick?: () => void;
+ *   compact?: boolean;
+ * }} props
+ */
+export default function MoodCard({ mood, score = undefined, source = undefined, date = undefined, onClick = undefined, compact = false }) {
   const config = moodConfig[mood] || moodConfig.neutral;
 
   return (

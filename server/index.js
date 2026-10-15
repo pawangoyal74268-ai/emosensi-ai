@@ -1,8 +1,19 @@
 // EmoSense AI — Independent Backend Server (Express + Prisma)
-import "dotenv/config";
+import dotenv from "dotenv";
+dotenv.config({ path: ".env.local" });
+dotenv.config({ path: ".env" });
 import express from "express";
 import cors from "cors";
+import cookieParser from "cookie-parser";
 import healthRouter from "./routes/health.js";
+import authRouter from "./routes/auth.js";
+import moodsRouter from "./routes/moods.js";
+import analyticsRouter from "./routes/analytics.js";
+import doctorsRouter from "./routes/doctors.js";
+import appointmentsRouter from "./routes/appointments.js";
+import analysisRouter from "./routes/analysis.js";
+import chatRouter from "./routes/chat.js";
+import memoryRouter from "./routes/memory.js";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler.js";
 import prisma from "./db.js";
 import { seedDatabase } from "./seed.js";
@@ -16,6 +27,8 @@ const allowedOrigins = [
   FRONTEND_ORIGIN,
   "http://localhost:5173",
   "http://127.0.0.1:5173",
+  "http://localhost:5174",
+  "http://127.0.0.1:5174",
   "http://localhost:3000",
 ];
 
@@ -34,18 +47,34 @@ app.use(
   })
 );
 
-// 2. Request Body Parsing
+// 2. Request Body & Cookie Parsing
+app.use(cookieParser());
 app.use(express.json({ limit: "15mb" }));
 app.use(express.urlencoded({ extended: true, limit: "15mb" }));
 
+// Identify all local Express responses
+app.use((req, res, next) => {
+  res.setHeader("X-Backend-Service", "EmoSense-Express-Local");
+  next();
+});
+
 // 3. API Routes
 app.use("/api", healthRouter);
+app.use("/api/auth", authRouter);
+app.use("/api/moods", moodsRouter);
+app.use("/api/analytics", analyticsRouter);
+app.use("/api/doctors", doctorsRouter);
+app.use("/api/appointments", appointmentsRouter);
+app.use("/api/analysis", analysisRouter);
+app.use("/api/chat", chatRouter);
+app.use("/api/memory", memoryRouter);
 
 // 4. Fallback & Centralized Error Handlers
 app.use(notFoundHandler);
 app.use(errorHandler);
 
 // 5. Server Initialization
+
 async function startServer() {
   try {
     // Verify database connection on startup

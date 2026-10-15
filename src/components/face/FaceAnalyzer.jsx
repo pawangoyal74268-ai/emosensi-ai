@@ -1,19 +1,22 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Camera, RefreshCw, Scan, X, Upload, ExternalLink, ShieldCheck } from "lucide-react";
+import { Camera, RefreshCw, Scan, X, ShieldCheck, AlertCircle, Upload } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { base44 } from "@/api/base44Client";
+import apiClient from "@/api/apiClient";
+import { useAuth } from "@/lib/AuthContext";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 
 export default function FaceAnalyzer({ onAnalysisComplete }) {
+  const { isAuthenticated, openAuthModal } = useAuth();
   const [cameraActive, setCameraActive] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [capturedImage, setCapturedImage] = useState(null);
-  const [uploadedUrl, setUploadedUrl] = useState(null);
   const [error, setError] = useState(null);
   const videoRef = useRef(null);
   const streamRef = useRef(null);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     if (cameraActive && streamRef.current && videoRef.current) {
@@ -23,6 +26,12 @@ export default function FaceAnalyzer({ onAnalysisComplete }) {
   }, [cameraActive]);
 
   const startCamera = async () => {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to perform a face emotion scan.");
+      openAuthModal();
+      return;
+    }
+
     try {
       setError(null);
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -32,7 +41,7 @@ export default function FaceAnalyzer({ onAnalysisComplete }) {
       setCameraActive(true);
     } catch (err) {
       console.error("Camera error:", err);
-      setError("Unable to access camera. Please allow camera permissions in your browser settings and try again.");
+      setError("Unable to access camera. Please allow camera permissions in your browser or use the Upload Photo option below.");
     }
   };
 
@@ -48,7 +57,45 @@ export default function FaceAnalyzer({ onAnalysisComplete }) {
     return () => stopCamera();
   }, [stopCamera]);
 
+  const processAndSubmit = async (imageFile, previewUrl) => {
+    setIsAnalyzing(true);
+    setError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("image", imageFile);
+
+      const res = await apiClient.analysis.analyzeFace(formData);
+
+      if (res && res.analysis) {
+        setIsAnalyzing(false);
+        onAnalysisComplete({
+          ...res.analysis,
+          image: previewUrl, // In-memory session preview only
+        });
+      } else {
+        throw new Error("No analysis result received from server.");
+      }
+    } catch (err) {
+      console.error("Face analysis error:", err);
+      setIsAnalyzing(false);
+      const errorMessage =
+        err?.data?.error?.message ||
+        err?.message ||
+        "Face analysis could not be completed.";
+      setError(errorMessage);
+      toast.error(errorMessage, { duration: 6000 });
+      // Honest reporting: do NOT fabricate fake results on failure
+    }
+  };
+
   const captureAndAnalyze = async () => {
+    if (!isAuthenticated) {
+      toast.error("Please sign in to perform a face emotion scan.");
+      openAuthModal();
+      return;
+    }
+
     if (!videoRef.current || !videoRef.current.videoWidth) {
       setError("Camera not ready yet. Please wait a moment and try again.");
       return;
@@ -62,226 +109,219 @@ export default function FaceAnalyzer({ onAnalysisComplete }) {
     const ctx = canvas.getContext("2d");
     ctx.drawImage(videoRef.current, 0, 0);
 
-    const imageDataUrl = canvas.toDataURL("image/jpeg", 0.8);
+    const imageDataUrl = canvas.toDataURL("image/jpeg", 0.85);
     setCapturedImage(imageDataUrl);
     stopCamera();
     setIsCapturing(false);
-    setIsAnalyzing(true);
 
     try {
       const response = await fetch(imageDataUrl);
       const blob = await response.blob();
       const imageFile = new File([blob], "face-capture.jpg", { type: "image/jpeg" });
-
-      const uploadRes = await base44.integrations.Core.UploadFile({ file: imageFile });
-      const imageUrl = uploadRes.file_url;
-      setUploadedUrl(imageUrl);
-
-      const aiResponse = await base44.integrations.Core.InvokeLLM({
-        prompt: `You are an expert emotion detection AI. Analyze this facial image carefully. Look at the person's facial expressions, micro-expressions, eye tension, mouth position, eyebrow position, and overall muscle patterns. Determine the dominant emotion, stress level, and confidence. Be accurate and empathetic.`,
-        file_urls: [imageUrl],
-        response_json_schema: {
-          type: "object",
-          properties: {
-            dominant_emotion: {
-              type: "string",
-              enum: ["happy", "calm", "neutral", "anxious", "sad", "stressed", "angry"],
-            },
-            confidence: { type: "number", description: "Confidence percentage 0-100" },
-            stress_level: { type: "number", description: "Stress level 1-10" },
-            mood_score: { type: "number", description: "Mood score 1-10 (10 = very positive)" },
-            observations: { type: "string", description: "Detailed supportive observations about facial cues detected" },
-          },
-        },
-      });
-
-      onAnalysisComplete({
-        ...aiResponse,
-        image: imageDataUrl,
-        uploadedImageUrl: imageUrl,
-      });
+      await processAndSubmit(imageFile, imageDataUrl);
     } catch (err) {
-      console.error("Face analysis error:", err);
-      onAnalysisComplete({
-        dominant_emotion: "neutral",
-        confidence: 50,
-        stress_level: 5,
-        mood_score: 5,
-        observations: "Unable to complete full analysis. Please ensure good lighting and face the camera directly, then try again.",
-        image: imageDataUrl,
-        uploadedImageUrl: null,
-      });
+      console.error("Error creating image blob:", err);
+      setIsAnalyzing(false);
+      setError("Failed to process captured image.");
+    }
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!isAuthenticated) {
+      toast.error("Please sign in to upload a photo for analysis.");
+      openAuthModal();
+      return;
     }
 
-    setIsAnalyzing(false);
+    if (!file.type.startsWith("image/")) {
+      setError("Please select a valid image file (JPEG, PNG, or WebP).");
+      return;
+    }
+
+    stopCamera();
+    const previewUrl = URL.createObjectURL(file);
+    setCapturedImage(previewUrl);
+    await processAndSubmit(file, previewUrl);
   };
 
   const reset = () => {
     setCapturedImage(null);
-    setUploadedUrl(null);
     setError(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
   };
 
   return (
-    <div className="rounded-3xl bg-white border border-slate-100 p-8" style={{ boxShadow: "0 4px 30px -8px rgba(124,58,237,0.08)" }}>
-      <div className="text-center space-y-6">
-        <div className="space-y-1.5">
-          <h3 className="text-xl font-semibold text-slate-800">Face Emotion Scan</h3>
-          <p className="text-sm text-slate-400">
-            Our AI will analyze your facial expressions to detect your mood
-          </p>
+    <div className="card-wellness p-6 sm:p-8 space-y-6">
+      <div className="text-center space-y-1.5">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#DDE8DF] dark:bg-white/10 text-[#245746] dark:text-[#88c5ad] text-xs font-semibold">
+          <Camera className="w-3.5 h-3.5" />
+          <span>Vision Emotion AI</span>
         </div>
+        <h2 className="text-xl sm:text-2xl font-heading font-bold text-[#182B2A] dark:text-white">
+          Face Emotion Scan
+        </h2>
+        <p className="text-xs sm:text-sm text-[#697681] dark:text-white/60 max-w-md mx-auto">
+          Reflect on visible facial expressions, eyebrow relaxation, and emotional tone in real-time.
+        </p>
+      </div>
 
-        {/* Camera / Preview Area */}
-        <div className="relative aspect-video max-w-md mx-auto rounded-3xl overflow-hidden bg-slate-50">
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className={cn(
-              "w-full h-full object-cover absolute inset-0 transition-opacity",
-              cameraActive ? "opacity-100" : "opacity-0"
-            )}
-          />
+      {/* Camera / Preview Area */}
+      <div className="relative aspect-video max-w-md mx-auto rounded-3xl overflow-hidden bg-[#F7F5F0] dark:bg-black/30 border border-[#E9EAE7] dark:border-white/10">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          muted
+          className={cn(
+            "w-full h-full object-cover absolute inset-0 transition-opacity",
+            cameraActive ? "opacity-100" : "opacity-0"
+          )}
+        />
 
-          <AnimatePresence mode="wait">
-            {cameraActive && (
-              <motion.div
-                key="overlay"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="absolute inset-0 pointer-events-none"
-              >
-                <div className="absolute inset-8 border-2 border-violet-400/40 rounded-2xl" />
-                <motion.div
-                  animate={{ top: ["10%", "80%", "10%"] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                  className="absolute left-8 right-8 h-0.5 bg-gradient-to-r from-transparent via-violet-400 to-transparent"
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-
+        {/* Viewfinder guideline overlay */}
+        <AnimatePresence mode="wait">
           {cameraActive && (
-            <button
-              onClick={stopCamera}
-              className="absolute top-3 right-3 p-2 bg-white/80 backdrop-blur rounded-full text-slate-500 hover:bg-white transition-colors z-10"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-
-          {capturedImage && !cameraActive && (
             <motion.div
-              key="captured"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="absolute inset-0"
-            >
-              <img src={capturedImage} alt="Captured" className="w-full h-full object-cover" />
-              {isAnalyzing && (
-                <div className="absolute inset-0 bg-white/60 backdrop-blur-sm flex flex-col items-center justify-center gap-4">
-                  <div className="relative w-16 h-16">
-                    <motion.div
-                      animate={{ scale: [1, 1.3, 1], opacity: [0.3, 0.1, 0.3] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                      className="absolute inset-0 rounded-full bg-violet-300"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <Scan className="w-8 h-8 text-violet-600" />
-                    </div>
-                  </div>
-                  <p className="text-slate-600 text-sm font-medium">AI scanning your face...</p>
-                </div>
-              )}
-            </motion.div>
-          )}
-
-          {!cameraActive && !capturedImage && (
-            <motion.div
-              key="placeholder"
+              key="overlay"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-violet-50 to-purple-50"
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 pointer-events-none flex items-center justify-center"
             >
-              <div className="relative">
-                <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center" style={{ boxShadow: "0 4px 16px -4px rgba(124,58,237,0.1)" }}>
-                  <Camera className="w-10 h-10 text-violet-400" />
-                </div>
+              <div className="w-48 h-56 sm:w-56 sm:h-64 border-2 border-[#245746]/50 dark:border-[#88c5ad]/60 rounded-3xl relative">
+                {/* Subtle scanning beam */}
                 <motion.div
-                  animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.1, 0.3] }}
-                  transition={{ duration: 2.5, repeat: Infinity }}
-                  className="absolute inset-0 rounded-full border-2 border-violet-300"
+                  animate={{ top: ["5%", "90%", "5%"] }}
+                  transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
+                  className="absolute left-2 right-2 h-0.5 bg-gradient-to-r from-transparent via-[#245746] dark:via-[#88c5ad] to-transparent"
                 />
               </div>
-              <p className="mt-4 text-slate-400 text-sm">Camera not active</p>
             </motion.div>
           )}
-        </div>
+        </AnimatePresence>
 
-        {/* Error */}
-        {error && (
-          <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-rose-500 text-sm">
-            {error}
-          </motion.p>
+        {cameraActive && (
+          <button
+            onClick={stopCamera}
+            className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/80 dark:bg-black/60 backdrop-blur-sm text-[#182B2A] dark:text-white flex items-center justify-center hover:bg-white transition-colors z-10"
+            aria-label="Close Camera"
+          >
+            <X className="w-4 h-4" />
+          </button>
         )}
 
-        {/* Uploaded image preview */}
-        {uploadedUrl && (
+        {capturedImage && !cameraActive && (
           <motion.div
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-4 rounded-2xl bg-emerald-50 border border-emerald-100 flex items-center gap-3"
+            key="captured"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="absolute inset-0"
           >
-            <Upload className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-            <div className="flex-1 text-left min-w-0">
-              <p className="text-xs text-slate-500">Uploaded image:</p>
-              <p className="text-xs text-emerald-600 truncate font-mono">{uploadedUrl}</p>
-            </div>
-            <a href={uploadedUrl} target="_blank" rel="noopener noreferrer" className="p-2 rounded-xl bg-white text-slate-400 hover:text-violet-600 transition-colors flex-shrink-0">
-              <ExternalLink className="w-4 h-4" />
-            </a>
+            <img src={capturedImage} alt="Captured face" className="w-full h-full object-cover" />
+            {isAnalyzing && (
+              <div className="absolute inset-0 bg-[#182B2A]/60 backdrop-blur-xs flex flex-col items-center justify-center gap-3 text-white">
+                <div className="w-12 h-12 rounded-2xl bg-white/20 flex items-center justify-center animate-spin">
+                  <Scan className="w-6 h-6 text-white" />
+                </div>
+                <p className="text-xs sm:text-sm font-semibold tracking-wide">
+                  Analyzing facial expressions with vision AI...
+                </p>
+              </div>
+            )}
           </motion.div>
         )}
 
-        {/* Controls */}
-        <div className="flex justify-center gap-3">
-          {!cameraActive && !capturedImage ? (
+        {!cameraActive && !capturedImage && (
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#F7F5F0]/80 dark:bg-[#152420]/80 p-6 text-center space-y-3">
+            <div className="w-16 h-16 rounded-3xl bg-[#DDE8DF] dark:bg-white/10 text-[#245746] dark:text-[#88c5ad] flex items-center justify-center shadow-xs">
+              <Camera className="w-8 h-8 stroke-[1.8px]" />
+            </div>
+            <div>
+              <p className="text-xs font-semibold text-[#182B2A] dark:text-white">Camera not active</p>
+              <p className="text-[11px] text-[#697681] dark:text-white/50 mt-0.5">
+                Start your camera or select an image file to analyze
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Error notice if occurred */}
+      {error && (
+        <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 text-left text-xs sm:text-sm text-amber-900 dark:text-amber-200 space-y-1">
+          <div className="flex items-center gap-2 font-bold text-amber-800 dark:text-amber-100">
+            <AlertCircle className="w-4 h-4 flex-shrink-0" />
+            <span>Face Analysis Notice</span>
+          </div>
+          <p className="text-xs leading-relaxed">{error}</p>
+        </div>
+      )}
+
+      {/* Controls: Start Camera, Scan My Face, Retake, and Upload controls */}
+      <div className="flex flex-wrap items-center justify-center gap-3">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={handleFileUpload}
+        />
+
+        {!cameraActive && !capturedImage ? (
+          <>
             <Button
               onClick={startCamera}
-              size="lg"
-              className="rounded-full px-8 h-12 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 border-0"
-              style={{ boxShadow: "0 4px 16px -2px rgba(99,102,241,0.3)" }}
+              className="h-12 px-6 rounded-2xl bg-[#245746] hover:bg-[#1d4839] text-white text-xs sm:text-sm font-semibold shadow-sm transition-all active:scale-95 min-h-[44px]"
             >
-              <Camera className="w-5 h-5 mr-2" />
+              <Camera className="w-4 h-4 mr-2" />
               Start Camera
             </Button>
-          ) : cameraActive ? (
             <Button
-              onClick={captureAndAnalyze}
-              disabled={isCapturing}
-              size="lg"
-              className="rounded-full px-8 h-12 bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 border-0"
-              style={{ boxShadow: "0 4px 16px -2px rgba(124,58,237,0.3)" }}
+              onClick={() => fileInputRef.current?.click()}
+              variant="outline"
+              className="h-12 px-5 rounded-2xl border-[#E9EAE7] dark:border-white/10 text-[#182B2A] dark:text-white hover:bg-[#F7F5F0] dark:hover:bg-white/10 text-xs sm:text-sm font-semibold min-h-[44px]"
             >
-              <Scan className="w-5 h-5 mr-2" />
-              {isCapturing ? "Capturing..." : "Scan My Face"}
+              <Upload className="w-4 h-4 mr-2" />
+              Upload Photo
             </Button>
-          ) : capturedImage && !isAnalyzing ? (
-            <Button onClick={reset} size="lg" variant="outline" className="rounded-full px-8 h-12 border-slate-200 text-slate-600 hover:bg-slate-50">
-              <RefreshCw className="w-5 h-5 mr-2" />
-              Try Again
+          </>
+        ) : cameraActive ? (
+          <Button
+            onClick={captureAndAnalyze}
+            disabled={isCapturing}
+            className="h-12 px-8 rounded-2xl bg-[#245746] hover:bg-[#1d4839] text-white text-xs sm:text-sm font-bold shadow-sm transition-all active:scale-95 min-h-[44px]"
+          >
+            <Scan className="w-4 h-4 mr-2" />
+            {isCapturing ? "Capturing..." : "Scan My Face"}
+          </Button>
+        ) : capturedImage && !isAnalyzing ? (
+          <>
+            <Button
+              onClick={reset}
+              variant="outline"
+              className="h-12 px-6 rounded-2xl border-[#E9EAE7] dark:border-white/10 text-[#182B2A] dark:text-white hover:bg-[#F7F5F0] dark:hover:bg-white/10 text-xs sm:text-sm font-semibold min-h-[44px]"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Retake / Try Again
             </Button>
-          ) : null}
-        </div>
+            <Button
+              onClick={() => fileInputRef.current?.click()}
+              variant="ghost"
+              className="h-12 px-4 rounded-2xl text-[#697681] dark:text-white/70 hover:bg-black/5 dark:hover:bg-white/5 text-xs font-medium"
+            >
+              Upload Different Photo
+            </Button>
+          </>
+        ) : null}
+      </div>
 
-        {/* Privacy */}
-        <div className="flex items-center justify-center gap-2">
-          <ShieldCheck className="w-4 h-4 text-slate-300" />
-          <p className="text-xs text-slate-400">Camera access is only used when you choose Face Scan</p>
-        </div>
+      {/* Privacy Notice */}
+      <div className="flex items-center justify-center gap-2 text-xs text-[#697681] dark:text-white/50 text-center">
+        <ShieldCheck className="w-4 h-4 text-[#245746] dark:text-[#88c5ad]" />
+        <span>In-memory processing only: images are never saved to disk or permanently retained.</span>
       </div>
     </div>
   );

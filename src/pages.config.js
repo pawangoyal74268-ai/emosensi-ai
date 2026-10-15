@@ -5,6 +5,8 @@ import History from './pages/History';
 import Home from './pages/Home';
 import Voice from './pages/Voice';
 import Settings from './pages/Settings';
+import Analysis from './pages/Analysis';
+import Text from './pages/Text';
 import __Layout from './Layout.jsx';
 
 
@@ -16,6 +18,8 @@ export const PAGES = {
     "Home": Home,
     "Voice": Voice,
     "Settings": Settings,
+    "Analysis": Analysis,
+    "Text": Text,
 }
 
 export const pagesConfig = {

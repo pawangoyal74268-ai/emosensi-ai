@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -6,83 +6,99 @@
 
 @layer base {
   :root {
-    --background: 280 33% 99%;
-    --foreground: 260 15% 20%;
+    /* EmoSense AI — Mental Wellness Design System */
+    /* Warm Ivory: #F7F5F0 */
+    --background: 43 27% 95.5%;
+    /* Main Text: #182B2A */
+    --foreground: 176 28% 13%;
+    /* White Cards: #FFFFFF */
     --card: 0 0% 100%;
-    --card-foreground: 260 15% 20%;
+    --card-foreground: 176 28% 13%;
     --popover: 0 0% 100%;
-    --popover-foreground: 260 15% 20%;
-    --primary: 265 60% 58%;
+    --popover-foreground: 176 28% 13%;
+    /* Deep Forest Green: #245746 */
+    --primary: 160 41% 24%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 200 65% 93%;
-    --secondary-foreground: 200 50% 30%;
-    --muted: 280 20% 96%;
-    --muted-foreground: 260 10% 45%;
-    --accent: 265 50% 95%;
-    --accent-foreground: 265 60% 40%;
+    /* Sage Green: #DDE8DF */
+    --secondary: 130 20% 89%;
+    --secondary-foreground: 160 41% 24%;
+    /* Soft background muted */
+    --muted: 40 14% 93%;
+    /* Secondary Text: #697681 */
+    --muted-foreground: 206 10% 46%;
+    /* Muted Blue: #E4EDFC */
+    --accent: 218 82% 94%;
+    --accent-foreground: 176 28% 13%;
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
-    --border: 280 20% 92%;
-    --input: 280 20% 92%;
-    --ring: 265 60% 58%;
-    --chart-1: 265 60% 58%;
-    --chart-2: 200 60% 50%;
-    --chart-3: 170 50% 45%;
-    --chart-4: 35 70% 60%;
-    --chart-5: 340 60% 55%;
-    --radius: 0.75rem;
-    --font-heading: "Plus Jakarta Sans", system-ui, sans-serif;
-    --font-body: "Plus Jakarta Sans", system-ui, sans-serif;
-    --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
-    --sidebar-background: 280 33% 99%;
-    --sidebar-foreground: 260 15% 25%;
-    --sidebar-primary: 265 60% 58%;
+    /* Subtle Borders: #E9EAE7 */
+    --border: 80 6% 91%;
+    --input: 80 6% 91%;
+    --ring: 160 41% 24%;
+    --chart-1: 160 41% 24%;
+    --chart-2: 218 70% 60%;
+    --chart-3: 130 30% 50%;
+    --chart-4: 35 60% 55%;
+    --chart-5: 263 50% 60%;
+    --radius: 1.25rem;
+    --font-heading: "Manrope", "Plus Jakarta Sans", system-ui, sans-serif;
+    --font-body: "Plus Jakarta Sans", "Manrope", system-ui, sans-serif;
+    --font-display: "Manrope", system-ui, sans-serif;
+    --sidebar-background: 43 27% 95.5%;
+    --sidebar-foreground: 176 28% 13%;
+    --sidebar-primary: 160 41% 24%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 265 50% 95%;
-    --sidebar-accent-foreground: 265 60% 40%;
-    --sidebar-border: 280 20% 92%;
-    --sidebar-ring: 265 60% 58%;
+    --sidebar-accent: 130 20% 89%;
+    --sidebar-accent-foreground: 160 41% 24%;
+    --sidebar-border: 80 6% 91%;
+    --sidebar-ring: 160 41% 24%;
   }
 
   .dark {
-    --background: 260 20% 8%;
-    --foreground: 280 20% 90%;
-    --card: 260 20% 10%;
-    --card-foreground: 280 20% 90%;
-    --popover: 260 20% 10%;
-    --popover-foreground: 280 20% 90%;
-    --primary: 265 60% 65%;
-    --primary-foreground: 260 20% 8%;
-    --secondary: 260 15% 16%;
-    --secondary-foreground: 280 20% 90%;
-    --muted: 260 15% 16%;
-    --muted-foreground: 260 10% 60%;
-    --accent: 260 15% 18%;
-    --accent-foreground: 280 20% 90%;
+    --background: 176 28% 8%;
+    --foreground: 43 20% 93%;
+    --card: 176 24% 11%;
+    --card-foreground: 43 20% 93%;
+    --popover: 176 24% 11%;
+    --popover-foreground: 43 20% 93%;
+    --primary: 155 35% 42%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 160 20% 18%;
+    --secondary-foreground: 43 20% 93%;
+    --muted: 176 15% 16%;
+    --muted-foreground: 206 10% 65%;
+    --accent: 218 30% 20%;
+    --accent-foreground: 43 20% 93%;
     --destructive: 0 70% 55%;
     --destructive-foreground: 0 0% 100%;
-    --border: 260 15% 18%;
-    --input: 260 15% 18%;
-    --ring: 265 60% 65%;
-    --chart-1: 265 60% 65%;
-    --chart-2: 200 60% 55%;
-    --chart-3: 170 50% 50%;
-    --chart-4: 35 70% 60%;
-    --chart-5: 340 60% 55%;
-    --sidebar-background: 260 20% 10%;
-    --sidebar-foreground: 280 20% 90%;
-    --sidebar-primary: 265 60% 65%;
-    --sidebar-primary-foreground: 260 20% 8%;
-    --sidebar-accent: 260 15% 18%;
-    --sidebar-accent-foreground: 280 20% 90%;
-    --sidebar-border: 260 15% 18%;
-    --sidebar-ring: 265 60% 65%;
+    --border: 176 15% 18%;
+    --input: 176 15% 18%;
+    --ring: 155 35% 42%;
+    --chart-1: 155 35% 45%;
+    --chart-2: 218 60% 65%;
+    --chart-3: 130 30% 60%;
+    --chart-4: 35 60% 65%;
+    --chart-5: 263 50% 70%;
+    --sidebar-background: 176 28% 8%;
+    --sidebar-foreground: 43 20% 93%;
+    --sidebar-primary: 155 35% 42%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 160 20% 18%;
+    --sidebar-accent-foreground: 43 20% 93%;
+    --sidebar-border: 176 15% 18%;
+    --sidebar-ring: 155 35% 42%;
   }
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    box-sizing: border-box;
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-tap-highlight-color: transparent;
   }
 
   body {
@@ -90,10 +106,13 @@
     font-family: var(--font-body);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    min-height: 100vh;
+    overflow-x: hidden;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
+    letter-spacing: -0.015em;
   }
 }
 
@@ -102,22 +121,35 @@
   .font-body { font-family: var(--font-body); }
   .font-display { font-family: var(--font-display); }
 
-  .soft-shadow {
-    box-shadow: 0 2px 20px -5px rgba(124, 58, 237, 0.08);
+  /* Soft organic shadows */
+  .wellness-shadow {
+    box-shadow: 0 4px 20px -3px rgba(36, 87, 70, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
   }
-  .soft-shadow-lg {
-    box-shadow: 0 8px 40px -8px rgba(124, 58, 237, 0.12);
+  .wellness-shadow-md {
+    box-shadow: 0 10px 30px -5px rgba(36, 87, 70, 0.08), 0 4px 10px -2px rgba(0, 0, 0, 0.03);
   }
-  .card-soft {
-    @apply bg-white rounded-3xl border border-slate-100/80;
-    box-shadow: 0 2px 20px -5px rgba(124, 58, 237, 0.06);
+  .wellness-shadow-lg {
+    box-shadow: 0 20px 45px -10px rgba(36, 87, 70, 0.12), 0 8px 16px -4px rgba(0, 0, 0, 0.04);
   }
-  .card-soft-hover {
-    @apply bg-white rounded-3xl border border-slate-100/80 transition-all duration-300;
-    box-shadow: 0 2px 20px -5px rgba(124, 58, 237, 0.06);
+
+  .card-wellness {
+    @apply bg-white dark:bg-[#152420] rounded-3xl border border-[#E9EAE7] dark:border-white/10;
+    box-shadow: 0 4px 20px -3px rgba(36, 87, 70, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
   }
-  .card-soft-hover:hover {
-    box-shadow: 0 8px 40px -8px rgba(124, 58, 237, 0.12);
+  .card-wellness-hover {
+    @apply bg-white dark:bg-[#152420] rounded-3xl border border-[#E9EAE7] dark:border-white/10 transition-all duration-200;
+    box-shadow: 0 4px 20px -3px rgba(36, 87, 70, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
+  }
+  .card-wellness-hover:hover {
+    box-shadow: 0 10px 30px -5px rgba(36, 87, 70, 0.1), 0 4px 12px -2px rgba(0, 0, 0, 0.03);
     transform: translateY(-2px);
+  }
+
+  /* Safe area padding for mobile navigation */
+  .pb-safe-nav {
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+  }
+  .pt-safe {
+    padding-top: max(1rem, env(safe-area-inset-top, 0px));
   }
 }

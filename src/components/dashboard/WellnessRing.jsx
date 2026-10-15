@@ -1,6 +1,6 @@
 import { motion } from "framer-motion";
 
-export default function WellnessRing({ score = 0, size = 180, label = "Wellness Score", sublabel }) {
+export default function WellnessRing({ score = 0, size = 180, _label = "Wellness Score", sublabel }) {
   const radius = (size - 20) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (score / 100) * circumference;

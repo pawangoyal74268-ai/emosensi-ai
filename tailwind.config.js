@@ -64,6 +64,23 @@ module.exports = {
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
 					border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
+				},
+				wellness: {
+					ivory: '#F7F5F0',
+					card: '#FFFFFF',
+					sage: '#DDE8DF',
+					'sage-light': '#EEF4F0',
+					forest: '#245746',
+					'forest-hover': '#1d4839',
+					'forest-light': '#2f6e59',
+					blue: '#E4EDFC',
+					'blue-light': '#F2F6FE',
+					lavender: '#EEE8FA',
+					'lavender-light': '#F7F4FD',
+					main: '#182B2A',
+					subtext: '#697681',
+					border: '#E9EAE7',
+					borderHover: '#D8DAD4'
 				}
 			},
 			keyframes: {

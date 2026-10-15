@@ -23,6 +23,7 @@ model User {
   chatSessions    ChatSession[]
   analysisRecords AnalysisRecord[]
   appointments    Appointment[]
+  memories        UserMemory[]
 
   @@map("users")
 }
@@ -137,4 +138,23 @@ model Appointment {
   @@index([doctorId])
   @@index([date])
   @@map("appointments")
+}
+
+model UserMemory {
+  id              String    @id @default(uuid())
+  userId          String
+  category        String    @default("general") // preference, project, goal, topic, task, style, general
+  content         String
+  confidence      Float?    @default(0.9)
+  sourceSessionId String?
+  lastRecalledAt  DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([category])
+  @@index([updatedAt])
+  @@map("user_memories")
 }
